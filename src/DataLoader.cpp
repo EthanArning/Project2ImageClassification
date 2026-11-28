@@ -43,3 +43,20 @@ Dataset loadDataset(const string& imagePath, const string& labelPath) {
     data.numClasses = *max_element(data.labels.begin(), data.labels.end()) + 1;
     return data;
 }
+
+// ---------- Where each dataset's files live ----------
+bool loadDatasets(const string& name, Dataset& train, Dataset& val, Dataset& test) {
+    if (name == "digits") {
+        train = loadDataset("data/digitdata/trainingimages",   "data/digitdata/traininglabels");
+        val   = loadDataset("data/digitdata/validationimages", "data/digitdata/validationlabels");
+        test  = loadDataset("data/digitdata/testimages",       "data/digitdata/testlabels");
+        return true;
+    }
+    if (name == "faces") {
+        train = loadDataset("data/facedata/facedatatrain",      "data/facedata/facedatatrainlabels");
+        val   = loadDataset("data/facedata/facedatavalidation", "data/facedata/facedatavalidationlabels");
+        test  = loadDataset("data/facedata/facedatatest",       "data/facedata/facedatatestlabels");
+        return true;
+    }
+    return false;
+}

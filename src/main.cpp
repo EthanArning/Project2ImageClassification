@@ -1,28 +1,41 @@
 #include <iostream>
+#include <string>
 #include "DataLoader.h"
 #include "Features.h"
 #include "NaiveBayes.h"
 #include "Perceptron.h"
 #include "Evaluation.h"
+#include "Demo.h"
 using namespace std;
 
-// Turn every image in a dataset into a feature vector.
-vector<FeatureVector> extractAll(const Dataset& data, bool useDensity) {
-    vector<FeatureVector> all;
-    for (const Image& img : data.images) {
-        if (useDensity) all.push_back(extractDensity(img, 4, 4, 3));
-        else            all.push_back(extractPixel(img));
+// Usage:   test.exe [digits|faces] [demo]
+//   test.exe faces        -> run the experiments on faces
+//   test.exe digits demo  -> interactive demo on digits
+int main(int argc, char* argv[]) {
+    string dataName = "digits";
+    bool demo = false;
+    for (int i = 1; i < argc; ++i) {
+        string arg = argv[i];
+        if (arg == "demo") demo = true;
+        else               dataName = arg;
     }
-    return all;
-}
 
-int main() {
-    Dataset train = loadDataset("data/digitdata/trainingimages",   "data/digitdata/traininglabels");
-    Dataset val   = loadDataset("data/digitdata/validationimages", "data/digitdata/validationlabels");
-    Dataset test  = loadDataset("data/digitdata/testimages",       "data/digitdata/testlabels");
+    Dataset train, val, test;
+    if (!loadDatasets(dataName, train, val, test)) {
+        cout << "Unknown dataset '" << dataName << "'. Use digits or faces.\n";
+        return 1;
+    }
     int numClasses = train.numClasses;
-    int trials = 5;
+    cout << "Dataset: " << dataName << " (" << train.images.size() << " train, "
+         << val.images.size() << " validation, " << test.images.size() << " test, "
+         << train.height << "x" << train.width << " images)\n";
 
+    if (demo) {
+        runDemo(train, test);
+        return 0;
+    }
+
+    int trials = 5;
     for (int useDensity = 0; useDensity <= 1; ++useDensity) {
         string featureName = useDensity ? "density" : "pixel";
         vector<FeatureVector> Xtrain = extractAll(train, useDensity);
@@ -41,12 +54,12 @@ int main() {
 
         // The real experiments, on TEST data
         auto nbResults = runExperiment(nb, Xtrain, train.labels, Xtest, test.labels, numClasses, trials);
-        printResults("Naive Bayes / " + featureName, nbResults);
-        writeCsv("digits_nb_" + featureName + ".csv", nbResults);
+        printResults(dataName + ": Naive Bayes / " + featureName, nbResults);
+        writeCsv(dataName + "_nb_" + featureName + ".csv", nbResults);
 
         auto pResults = runExperiment(perceptron, Xtrain, train.labels, Xtest, test.labels, numClasses, trials);
-        printResults("Perceptron / " + featureName, pResults);
-        writeCsv("digits_perceptron_" + featureName + ".csv", pResults);
+        printResults(dataName + ": Perceptron / " + featureName, pResults);
+        writeCsv(dataName + "_perceptron_" + featureName + ".csv", pResults);
     }
     return 0;
 }
